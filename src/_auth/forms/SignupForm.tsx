@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -13,8 +12,14 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { SignupValidation } from "@/lib/validation";
+import { Link, useNavigate } from "react-router-dom";
+import Loader from "@/components/shared/Loader";
+import { createUserAccount, signInAccount } from "@/lib/appwrite/api";
+import { useToast } from "@/components/ui/use-toast";
 
 const SignupForm = () => {
+  const { toast } = useToast();
+  const navigate = useNavigate();
   const form = useForm<z.infer<typeof SignupValidation>>({
     resolver: zodResolver(SignupValidation),
     defaultValues: {
@@ -25,9 +30,31 @@ const SignupForm = () => {
     },
   });
 
-  function onSubmit(values: z.infer<typeof SignupValidation>) {
-    console.log(values);
-  }
+  const handleSignup = async (user: z.infer<typeof SignupValidation>) => {
+    try {
+      const newUser = await createUserAccount(user);
+      if (!newUser) {
+        toast({ title: "Sign up failed. Please try again." });
+        return;
+      }
+      const session = await signInAccount({
+        email: user.email,
+        password: user.password,
+      });
+      if (!session) {
+        toast({ title: "Something went wrong.Please login your new account" });
+        navigate("/sign-in");
+        return;
+      }
+
+      form.reset();
+      navigate("/");
+    } catch (error) {
+      console.log({ error });
+    }
+  };
+
+  const isUserLoading = false;
 
   return (
     <>
@@ -40,26 +67,92 @@ const SignupForm = () => {
           <p className="text-light-3 small-medium md:base-regular">
             Enter your account detail
           </p>
+
+          <form
+            onSubmit={form.handleSubmit(handleSignup)}
+            className="space-y-8"
+          >
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Name</FormLabel>
+                  <FormControl>
+                    <Input type="text" className="shad-input" {...field} />
+                  </FormControl>
+
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="username"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Username</FormLabel>
+                  <FormControl>
+                    <Input type="text" className="shad-input" {...field} />
+                  </FormControl>
+
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Email</FormLabel>
+                  <FormControl>
+                    <Input type="email" className="shad-input" {...field} />
+                  </FormControl>
+
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="password"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Password</FormLabel>
+                  <FormControl>
+                    <Input type="password" className="shad-input" {...field} />
+                  </FormControl>
+
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <Button type="submit" className="shad-button_primary">
+              {isUserLoading ? (
+                <div className="flex-center gap-2">
+                  <Loader /> Loading...
+                </div>
+              ) : (
+                "Sign Up"
+              )}
+            </Button>
+
+            <p>
+              Already have an account?
+              <Link
+                to="/sign-in"
+                className="text-primary-500 text-small-semibold ml-1"
+              >
+                Log in
+              </Link>
+            </p>
+          </form>
         </div>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-          <FormField
-            control={form.control}
-            name="username"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Username</FormLabel>
-                <FormControl>
-                  <Input placeholder="shadcn" {...field} />
-                </FormControl>
-                <FormDescription>
-                  This is your public display name.
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <Button type="submit">Submit</Button>
-        </form>
       </Form>
     </>
   );
