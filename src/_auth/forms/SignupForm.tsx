@@ -14,12 +14,21 @@ import { Input } from "@/components/ui/input";
 import { SignupValidation } from "@/lib/validation";
 import { Link, useNavigate } from "react-router-dom";
 import Loader from "@/components/shared/Loader";
-import { createUserAccount, signInAccount } from "@/lib/appwrite/api";
 import { useToast } from "@/components/ui/use-toast";
+import {
+  useCreateUserAccount,
+  useSignInAccount,
+} from "@/lib/react-query/queries";
 
 const SignupForm = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  const { mutateAsync: createUserAccount, isLoading: isCreatingUser } =
+    useCreateUserAccount();
+
+  const { mutateAsync: signInAccount, isLoading: isSigningIn } =
+    useSignInAccount();
   const form = useForm<z.infer<typeof SignupValidation>>({
     resolver: zodResolver(SignupValidation),
     defaultValues: {
@@ -53,8 +62,6 @@ const SignupForm = () => {
       console.log({ error });
     }
   };
-
-  const isUserLoading = false;
 
   return (
     <>
@@ -133,7 +140,7 @@ const SignupForm = () => {
             />
 
             <Button type="submit" className="shad-button_primary">
-              {isUserLoading ? (
+              {isCreatingUser ? (
                 <div className="flex-center gap-2">
                   <Loader /> Loading...
                 </div>
