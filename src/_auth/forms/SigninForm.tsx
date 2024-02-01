@@ -13,15 +13,20 @@ import { useForm } from "react-hook-form";
 import { useToast } from "@/components/ui/use-toast";
 import { Link, useNavigate } from "react-router-dom";
 import { SigninValidation } from "@/lib/validation";
-import { signInAccount } from "@/lib/appwrite/api";
+
 import { Input } from "@/components/ui/input";
 import { Loader } from "@/components/shared";
+import { useUserContext } from "@/context/AuthContext";
+import { useSignInAccount } from "@/lib/react-query/queries";
 
 const SigninForm = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { checkAuthUser, isLoading: isUserLoading } = useUserContext();
 
-  const isLoading = false;
+  //Query
+
+  const { mutateAsync: signInAccount, isPending } = useSignInAccount();
 
   const form = useForm<z.infer<typeof SigninValidation>>({
     resolver: zodResolver(SigninValidation),
@@ -40,7 +45,15 @@ const SigninForm = () => {
       return;
     }
 
-    // const isLoggedIn = await checkAuthUser();
+    const isLoggedIn = await checkAuthUser();
+
+    if (isLoggedIn) {
+      form.reset();
+      navigate("/");
+    } else {
+      toast({ title: "Login failed. Please try again." });
+    }
+    return;
   };
 
   return (
@@ -87,7 +100,7 @@ const SigninForm = () => {
             />
 
             <Button type="submit" className="shad-button_primary">
-              {isLoading ? (
+              {isPending || isUserLoading ? (
                 <div className="flex-center gap-2">
                   <Loader /> Loading...
                 </div>
